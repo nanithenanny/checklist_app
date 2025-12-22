@@ -111,6 +111,7 @@ function openDialog(mode, it=null) {
   els.fCategory.value = it?.category ?? "";
   els.fQty.value = it?.qty ?? "";
   els.fUnit.value = it?.unit ?? "";
+  els.fPrice.value = it?.price ?? "";
   els.fVendor.value = it?.vendor ?? "";
   els.fNotes.value = it?.notes ?? "";
 
@@ -127,6 +128,7 @@ function upsertFromForm() {
     category: els.fCategory.value.trim(),
     qty: els.fQty.value === "" ? null : Number(els.fQty.value),
     unit: els.fUnit.value.trim(),
+    price: els.fPrice.value === "" ? null : Number(els.fPrice.value),
     vendor: els.fVendor.value.trim(),
     notes: els.fNotes.value.trim(),
     checked: editingId ? (items.find(x=>x.id===editingId)?.checked ?? false) : false
