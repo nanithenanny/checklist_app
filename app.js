@@ -16,6 +16,7 @@ const els = {
   fCategory: document.getElementById("fCategory"),
   fQty: document.getElementById("fQty"),
   fUnit: document.getElementById("fUnit"),
+  fPrice: document.getElementById("fPrice"),
   fVendor: document.getElementById("fVendor"),
   fNotes: document.getElementById("fNotes"),
   itemForm: document.getElementById("itemForm")
@@ -29,11 +30,7 @@ function loadItems() {
 
   // Starter template — edit these to your real list
   const seed = [
-    { id: uid(), name: "Mozzarella", category: "Cheese", qty: 2, unit: "kg", vendor: "NSK", notes: "", checked: false },
-    { id: uid(), name: "Tomato sauce", category: "Sauce", qty: 6, unit: "cans", vendor: "Lotus", notes: "Pizza base", checked: false },
-    { id: uid(), name: "Pepperoni", category: "Toppings", qty: 1, unit: "kg", vendor: "Supplier A", notes: "", checked: false },
-    { id: uid(), name: "Pizza box 10-inch", category: "Packaging", qty: 50, unit: "pcs", vendor: "Shopee", notes: "", checked: false },
-    { id: uid(), name: "Gas/Butane", category: "Ops", qty: 2, unit: "canisters", vendor: "Hardware", notes: "", checked: false }
+    { id: uid(), name: "Pizza Blend / Mozzarella", category: "Ingredients", qty: 3, unit: "pcs", price: 66.00, vendor: "Rosyam Mart", notes: "", checked: false },
   ];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
   return seed;
