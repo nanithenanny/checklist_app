@@ -88,6 +88,8 @@ function render() {
             <div class="meta">
               ${it.category ? `<span class="badge">${escapeHtml(it.category)}</span>` : ""}
               ${(it.qty || it.unit) ? `<span class="badge">${escapeHtml((it.qty ?? "") + " " + (it.unit ?? "")).trim()}</span>` : ""}
+              ${(it.price !== null && it.price !== undefined && it.price !== "") ? `<span class="badge">RM ${Number(it.price).toFixed(2)}/${escapeHtml(it.unit || "unit")}</span>` : ""}
+              ${(it.qty && it.price) ? `<span class="badge">Sub: RM ${(Number(it.qty) * Number(it.price)).toFixed(2)}</span>` : ""}
               ${it.vendor ? `<span class="badge">Buy: ${escapeHtml(it.vendor)}</span>` : ""}
               ${it.notes ? `<span class="badge">Note: ${escapeHtml(it.notes)}</span>` : ""}
             </div>
@@ -153,6 +155,8 @@ function buildWhatsAppText() {
   const picked = items.filter(x => x.checked);
   if (!picked.length) return "Weekly Stock Up:\n(You didn’t tick anything yet.)";
 
+  const fmt = (n) => `RM ${Number(n).toFixed(2)}`;
+
   // Group by vendor then category
   const byVendor = new Map();
   for (const it of picked) {
@@ -161,26 +165,60 @@ function buildWhatsAppText() {
     byVendor.get(vendor).push(it);
   }
 
+  let grandTotal = 0;
+
   const lines = [];
   lines.push(`Weekly Stock Up (${new Date().toLocaleDateString()}):`);
 
   for (const [vendor, arr] of Array.from(byVendor.entries()).sort((a,b)=>a[0].localeCompare(b[0]))) {
     lines.push(`\n🛒 ${vendor}`);
+
+    let vendorTotal = 0;
+
     const byCat = new Map();
     for (const it of arr) {
       const cat = (it.category || "Other").trim();
       if (!byCat.has(cat)) byCat.set(cat, []);
       byCat.get(cat).push(it);
     }
+
     for (const [cat, list] of Array.from(byCat.entries()).sort((a,b)=>a[0].localeCompare(b[0]))) {
       lines.push(`  • ${cat}`);
+
       for (const it of list.sort((a,b)=>a.name.localeCompare(b.name))) {
-        const qty = (it.qty ?? "") + (it.unit ? ` ${it.unit}` : "");
+        const qty = (it.qty ?? "");
+        const unit = it.unit ? ` ${it.unit}` : "";
         const note = it.notes ? ` — ${it.notes}` : "";
-        lines.push(`     - ${it.name}${qty.trim() ? ` (${qty.trim()})` : ""}${note}`);
+
+        let line = `     - ${it.name}`;
+        if (qty !== "" || unit.trim()) line += ` (${String(qty).trim()}${unit})`;
+
+        // Pricing
+        const hasPrice = it.price !== null && it.price !== undefined && it.price !== "";
+        const hasQty = it.qty !== null && it.qty !== undefined && it.qty !== "";
+
+        if (hasPrice) line += ` @ ${fmt(it.price)}/${it.unit || "unit"}`;
+
+        if (hasPrice && hasQty) {
+          const sub = Number(it.qty) * Number(it.price);
+          vendorTotal += sub;
+          line += ` = ${fmt(sub)}`;
+        } else if (!hasPrice) {
+          line += ` (no price)`;
+        } else if (!hasQty) {
+          line += ` (no qty)`;
+        }
+
+        lines.push(line + note);
       }
     }
+
+    grandTotal += vendorTotal;
+    lines.push(`  ✅ Vendor total: ${fmt(vendorTotal)}`);
   }
+
+  lines.push(`\n💰 Grand total (priced items): ${fmt(grandTotal)}`);
+  lines.push(`\nNote: Items missing qty/price are not included in totals.`);
 
   return lines.join("\n");
 }
@@ -213,6 +251,7 @@ function importJsonFile(file) {
         category: String(x.category || "").trim(),
         qty: (x.qty === null || x.qty === undefined || x.qty === "") ? null : Number(x.qty),
         unit: String(x.unit || "").trim(),
+        price: (x.price === null || x.price === undefined || x.price === "") ? null : Number(x.price),
         vendor: String(x.vendor || "").trim(),
         notes: String(x.notes || "").trim(),
         checked: Boolean(x.checked)
