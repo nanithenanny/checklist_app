@@ -45,22 +45,17 @@
         <input id="fCategory" placeholder="e.g., Cheese / Sauce / Packaging" />
       </label>
 
-      <div class="grid2">
-        <label>Qty
-          <input id="fQty" type="number" step="0.01" placeholder="e.g., 2" />
-        </label>
-        <label>Unit
-          <input id="fUnit" placeholder="e.g., kg / pcs / bottle" />
-        </label>
-      </div>
-
-      <label>Where to buy (vendor/place)
-        <input id="fVendor" placeholder="e.g., NSK / Lotus / BakeWithYen / Shopee" />
-      </label>
-
-      <label>Notes
-        <input id="fNotes" placeholder="Optional" />
-      </label>
+      <div class="grid2" style="grid-template-columns: 1fr 1fr 1fr;">
+  <label>Qty
+    <input id="fQty" type="number" step="0.01" placeholder="e.g., 2" />
+  </label>
+  <label>Unit
+    <input id="fUnit" placeholder="e.g., kg / pcs / bottle" />
+  </label>
+  <label>Price (RM/unit)
+    <input id="fPrice" type="number" step="0.01" placeholder="e.g., 12.50" />
+  </label>
+</div>
 
       <menu>
         <button value="cancel">Cancel</button>
