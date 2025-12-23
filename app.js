@@ -436,14 +436,30 @@ els.list.addEventListener("click", (e) => {
 });
 
 els.list.addEventListener("change", (e) => {
-  const cb = e.target.closest('input[type="checkbox"][data-act="toggle"]');
-  if (!cb) return;
-  const id = cb.getAttribute("data-id");
-  items = items.map(x =>
-  x.id === id ? ({ ...x, checked: cb.checked, purchased: cb.checked ? x.purchased : false }) : x);
+  // 1) Shopping view: mark bought / done
+  const buy = e.target.closest('input[type="checkbox"][data-act="buytoggle"]');
+  if (buy) {
+    const id = buy.getAttribute("data-id");
+    items = items.map(x => x.id === id ? ({ ...x, purchased: buy.checked }) : x);
+    saveItems(items);
+    render(); // important so it moves between sections + greys out
+    return;
+  }
 
-  saveItems(items);
+  // 2) Master list: need-to-buy tick
+  const cb = e.target.closest('input[type="checkbox"][data-act="toggle"]');
+  if (cb) {
+    const id = cb.getAttribute("data-id");
+    items = items.map(x =>
+      x.id === id
+        ? ({ ...x, checked: cb.checked, purchased: cb.checked ? (x.purchased ?? false) : false })
+        : x
+    );
+    saveItems(items);
+    render();
+  }
 });
+
 
 function renderShop() {
   const picked = items.filter(x => x.checked);
