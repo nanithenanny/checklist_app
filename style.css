@@ -31,3 +31,6 @@ th, td { border-bottom: 1px solid #f1f1f1; padding: 10px 6px; text-align:left; v
 th { font-size: 12px; color:#666; }
 .right { text-align:right; white-space:nowrap; }
 
+.done { opacity: 0.45; filter: grayscale(1); }
+.done b { text-decoration: line-through; }
+
