@@ -255,7 +255,8 @@ function importJsonFile(file) {
         price: (x.price === null || x.price === undefined || x.price === "") ? null : Number(x.price),
         vendor: String(x.vendor || "").trim(),
         notes: String(x.notes || "").trim(),
-        checked: Boolean(x.checked)
+        checked: Boolean(x.checked),
+        purchased: Boolean(x.purchased)
       })).filter(x => x.name);
       saveItems(items);
       render();
