@@ -33,7 +33,7 @@ function loadItems() {
 
   // Starter template — edit these to your real list
   const seed = [
-    { id: uid(), name: "Pizza Blend / Mozzarella", category: "Ingredients", qty: 3, unit: "pcs", price: 66.00, vendor: "Rosyam Mart", notes: "", checked: false },
+    { id: uid(), name: "Pizza Blend / Mozzarella", category: "Ingredients", qty: 3, unit: "pcs", price: 66.00, vendor: "Rosyam Mart", notes: "", checked: false, purchased:false },
   ];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
   return seed;
@@ -74,6 +74,9 @@ function vendorsFromItems(list) {
 
 function renderShop() {
   const picked = items.filter(x => x.checked);
+  const todo = picked.filter(x => !x.purchased);
+  const done = picked.filter(x => x.purchased);
+
   if (!picked.length) {
     els.list.innerHTML = `<div class="card">No items ticked yet. Go to <b>Master list</b> and tick what you need.</div>`;
     return;
@@ -260,6 +263,7 @@ function upsertFromForm() {
     notes: els.fNotes.value.trim(),
     checked: editingId ? (items.find(x=>x.id===editingId)?.checked ?? false) : false,
     purchased: editingId ? (items.find(x=>x.id===editingId)?.purchased ?? false) : false
+
   };
 
   if (editingId) {
@@ -435,7 +439,9 @@ els.list.addEventListener("change", (e) => {
   const cb = e.target.closest('input[type="checkbox"][data-act="toggle"]');
   if (!cb) return;
   const id = cb.getAttribute("data-id");
-  items = items.map(x => x.id === id ? ({...x, checked: cb.checked}) : x);
+  items = items.map(x =>
+  x.id === id ? ({ ...x, checked: cb.checked, purchased: cb.checked ? x.purchased : false }) : x);
+
   saveItems(items);
 });
 
