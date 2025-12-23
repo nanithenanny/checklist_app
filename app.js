@@ -133,7 +133,8 @@ function upsertFromForm() {
     price: els.fPrice.value === "" ? null : Number(els.fPrice.value),
     vendor: els.fVendor.value.trim(),
     notes: els.fNotes.value.trim(),
-    checked: editingId ? (items.find(x=>x.id===editingId)?.checked ?? false) : false
+    checked: editingId ? (items.find(x=>x.id===editingId)?.checked ?? false) : false,
+    purchased: editingId ? (items.find(x=>x.id===editingId)?.purchased ?? false) : false
   };
 
   if (editingId) {
