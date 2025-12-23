@@ -9,6 +9,9 @@ const els = {
   btnAdd: document.getElementById("btnAdd"),
   btnExport: document.getElementById("btnExport"),
   importFile: document.getElementById("importFile"),
+  btnViewList: document.getElementById("btnViewList"),
+  btnViewShop: document.getElementById("btnViewShop"),
+  btnShopReset: document.getElementById("btnShopReset"),
 
   dlg: document.getElementById("dlg"),
   dlgTitle: document.getElementById("dlgTitle"),
@@ -43,10 +46,126 @@ function saveItems(items) {
 let items = loadItems();
 let editingId = null;
 
+let view = localStorage.getItem("stockup_view") || "list";
+
+els.btnViewList.addEventListener("click", () => {
+  view = "list";
+  localStorage.setItem("stockup_view", view);
+  render();
+});
+
+els.btnViewShop.addEventListener("click", () => {
+  view = "shop";
+  localStorage.setItem("stockup_view", view);
+  render();
+});
+
+els.btnShopReset.addEventListener("click", () => {
+  // reset purchased ONLY for items currently ticked
+  items = items.map(x => x.checked ? ({...x, purchased:false}) : x);
+  saveItems(items);
+  render();
+});
+
 function vendorsFromItems(list) {
   const set = new Set(list.map(x => (x.vendor || "").trim()).filter(Boolean));
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
 }
+
+function renderShop() {
+  const picked = items.filter(x => x.checked);
+  if (!picked.length) {
+    els.list.innerHTML = `<div class="card">No items ticked yet. Go to <b>Master list</b> and tick what you need.</div>`;
+    return;
+  }
+
+  const fmt = (n) => `RM ${Number(n).toFixed(2)}`;
+  const sub = (it) => (it.qty != null && it.price != null) ? Number(it.qty) * Number(it.price) : null;
+
+  // group by vendor
+  const byVendor = new Map();
+  for (const it of picked) {
+    const v = (it.vendor || "Unknown vendor").trim();
+    if (!byVendor.has(v)) byVendor.set(v, []);
+    byVendor.get(v).push(it);
+  }
+
+  let grandRemaining = 0;
+  let grandDone = 0;
+
+  const blocks = Array.from(byVendor.entries())
+    .sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([vendor, list]) => {
+      const todo = list.filter(x => !x.purchased).sort((a,b)=>a.name.localeCompare(b.name));
+      const done = list.filter(x => x.purchased).sort((a,b)=>a.name.localeCompare(b.name));
+
+      const vendorRemain = todo.reduce((acc,it)=>acc + (sub(it) ?? 0), 0);
+      const vendorDone = done.reduce((acc,it)=>acc + (sub(it) ?? 0), 0);
+      grandRemaining += vendorRemain;
+      grandDone += vendorDone;
+
+      const table = (arr, isDone) => `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:50px;">${isDone ? "Done" : "Buy"}</th>
+              <th>Item</th>
+              <th class="right">Qty</th>
+              <th class="right">Price</th>
+              <th class="right">Sub</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${arr.map(it => {
+              const s = sub(it);
+              return `
+                <tr class="${it.purchased ? "done" : ""}">
+                  <td>
+                    <input type="checkbox"
+                      data-act="buytoggle"
+                      data-id="${it.id}"
+                      ${it.purchased ? "checked" : ""} />
+                  </td>
+                  <td><b>${escapeHtml(it.name)}</b>${it.notes ? `<div class="meta">${escapeHtml(it.notes)}</div>` : ""}</td>
+                  <td class="right">${it.qty ?? ""} ${escapeHtml(it.unit ?? "")}</td>
+                  <td class="right">${it.price != null ? fmt(it.price) : ""}</td>
+                  <td class="right">${s != null ? fmt(s) : ""}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+
+      return `
+        <div class="shopBlock">
+          <div class="shopTitle">
+            <div><b>🛒 ${escapeHtml(vendor)}</b></div>
+            <div class="meta">
+              <span class="badge">Remaining: ${fmt(vendorRemain)}</span>
+              <span class="badge">Done: ${fmt(vendorDone)}</span>
+            </div>
+          </div>
+
+          ${todo.length ? table(todo, false) : `<div class="card done">Nothing left to buy here ✅</div>`}
+
+          ${done.length ? `<div style="margin-top:10px;"><b>Done</b>${table(done, true)}</div>` : ""}
+        </div>
+      `;
+    });
+
+  els.list.innerHTML = `
+    <div class="card">
+      <b>Totals</b>
+      <div class="meta">
+        <span class="badge">Remaining: RM ${grandRemaining.toFixed(2)}</span>
+        <span class="badge">Done: RM ${grandDone.toFixed(2)}</span>
+      </div>
+    </div>
+    ${blocks.join("")}
+  `;
+}
+
 
 function renderVendorFilter() {
   const vendors = vendorsFromItems(items);
@@ -70,6 +189,12 @@ function filteredItems() {
 }
 
 function render() {
+  renderVendorFilter();
+  if (view === "shop") return renderShop();
+  return renderMaster();
+}
+
+function renderMaster() {
   renderVendorFilter();
   const list = filteredItems();
 
@@ -313,5 +438,100 @@ els.list.addEventListener("change", (e) => {
   items = items.map(x => x.id === id ? ({...x, checked: cb.checked}) : x);
   saveItems(items);
 });
+
+function renderShop() {
+  const picked = items.filter(x => x.checked);
+  if (!picked.length) {
+    els.list.innerHTML = `<div class="card">No items ticked yet. Go to <b>Master list</b> and tick what you need.</div>`;
+    return;
+  }
+
+  const fmt = (n) => `RM ${Number(n).toFixed(2)}`;
+  const sub = (it) => (it.qty != null && it.price != null) ? Number(it.qty) * Number(it.price) : null;
+
+  // group by vendor
+  const byVendor = new Map();
+  for (const it of picked) {
+    const v = (it.vendor || "Unknown vendor").trim();
+    if (!byVendor.has(v)) byVendor.set(v, []);
+    byVendor.get(v).push(it);
+  }
+
+  let grandRemaining = 0;
+  let grandDone = 0;
+
+  const blocks = Array.from(byVendor.entries())
+    .sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([vendor, list]) => {
+      const todo = list.filter(x => !x.purchased).sort((a,b)=>a.name.localeCompare(b.name));
+      const done = list.filter(x => x.purchased).sort((a,b)=>a.name.localeCompare(b.name));
+
+      const vendorRemain = todo.reduce((acc,it)=>acc + (sub(it) ?? 0), 0);
+      const vendorDone = done.reduce((acc,it)=>acc + (sub(it) ?? 0), 0);
+      grandRemaining += vendorRemain;
+      grandDone += vendorDone;
+
+      const table = (arr, isDone) => `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:50px;">${isDone ? "Done" : "Buy"}</th>
+              <th>Item</th>
+              <th class="right">Qty</th>
+              <th class="right">Price</th>
+              <th class="right">Sub</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${arr.map(it => {
+              const s = sub(it);
+              return `
+                <tr class="${it.purchased ? "done" : ""}">
+                  <td>
+                    <input type="checkbox"
+                      data-act="buytoggle"
+                      data-id="${it.id}"
+                      ${it.purchased ? "checked" : ""} />
+                  </td>
+                  <td><b>${escapeHtml(it.name)}</b>${it.notes ? `<div class="meta">${escapeHtml(it.notes)}</div>` : ""}</td>
+                  <td class="right">${it.qty ?? ""} ${escapeHtml(it.unit ?? "")}</td>
+                  <td class="right">${it.price != null ? fmt(it.price) : ""}</td>
+                  <td class="right">${s != null ? fmt(s) : ""}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+
+      return `
+        <div class="shopBlock">
+          <div class="shopTitle">
+            <div><b>🛒 ${escapeHtml(vendor)}</b></div>
+            <div class="meta">
+              <span class="badge">Remaining: ${fmt(vendorRemain)}</span>
+              <span class="badge">Done: ${fmt(vendorDone)}</span>
+            </div>
+          </div>
+
+          ${todo.length ? table(todo, false) : `<div class="card done">Nothing left to buy here ✅</div>`}
+
+          ${done.length ? `<div style="margin-top:10px;"><b>Done</b>${table(done, true)}</div>` : ""}
+        </div>
+      `;
+    });
+
+  els.list.innerHTML = `
+    <div class="card">
+      <b>Totals</b>
+      <div class="meta">
+        <span class="badge">Remaining: RM ${grandRemaining.toFixed(2)}</span>
+        <span class="badge">Done: RM ${grandDone.toFixed(2)}</span>
+      </div>
+    </div>
+    ${blocks.join("")}
+  `;
+}
+
 
 render();
